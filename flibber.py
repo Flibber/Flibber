@@ -1,5 +1,5 @@
 try:
-    import time, random, pycurl, re, hmac, urllib, urllib2, json, threading, simplejson, sys
+    import time, random, pycurl, hmac, urllib, simplejson, sys
     from hashlib import sha256
     try:
         from io import BytesIO
