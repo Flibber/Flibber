@@ -1,6 +1,8 @@
 # Flibber
 The Instagram Like and Follow Bot
 
+## See instructions on **lines 15 to 23**
+
 ### TODO
 - Write README.md
 - Split script into multiple files
@@ -11,5 +13,5 @@ The Instagram Like and Follow Bot
 - Catch more API errors including `OAuthAccessTokenException`
 - CLI setup and inputs
 - Check for max following count *(7500)*
-- Set up more alternative unfollowing methods (unfollow all)
+- Set up more alternative unfollowing methods *(unfollow all)*
 - STDOUT verbosity levels
