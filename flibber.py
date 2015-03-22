@@ -37,10 +37,6 @@ try:
             "selfie",
             "me"]
 
-    # If you change these delays, you will exceed the Instagram API rate-limit
-    LIKE_DELAY = 36
-    REL_DELAY = 60
-
     # DO NOT CHANGE ANYTHING BELOW THIS POINT
 
     NO_FOLLOW = 0
@@ -71,10 +67,6 @@ try:
     def messageHandler(message, prefix = "IBOT", level = "OKGREEN"):
         print ( "[" + getattr(tCol, level) + prefix + tCol.ENDC + "] "
                 + getattr(tCol, level) + message + tCol.ENDC )
-
-    if ACCESS_TOKEN == "changeme" or CLIENT_ID == "changeme" or CLIENT_SECRET == "changeme" or IP == "changeme":
-        print messageHandler("You must change all variables which equal 'changeme'", "FAIL", "FAIL")
-        sys.exit(1)
 
     def execPause(length):
         messageHandler('Paused for ' + tCol.FAIL + str(length) + tCol.WARNING + ' seconds...', "TIME", "WARNING")
@@ -328,8 +320,8 @@ try:
                 myid = comment['id']
                 result = likeAndFollowUser(myid)
                 if(result > 0):
-                    followCount = followCount+1
-                likeCount = likeCount + result
+                    followCount = followCount + 1
+                likeCount = likeCount + 1
                 if(followCount % 10 == 0):
                     messageHandler("Followed " + str(followCount) + " users", "followCount")
                 seconds = random.randint(1, MAX_SECS)
@@ -354,10 +346,10 @@ try:
         decider()
         begin()
 
-    messageHandler("----------------------", "FLIB", "HEADER")
-    messageHandler("  Welcome to Flibber  ", "FLIB", "HEADER")
-    messageHandler("  Chip (itschip.com)  ", "FLIB", "HEADER")
-    messageHandler("----------------------", "FLIB", "HEADER")
+    messageHandler("----------------------", "FBOT", "HEADER")
+    messageHandler("  Welcome to Flibber  ", "FBOT", "HEADER")
+    messageHandler("  Chip (itschip.com)  ", "FBOT", "HEADER")
+    messageHandler("----------------------", "FBOT", "HEADER")
     
     begin()
 
