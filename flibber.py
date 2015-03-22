@@ -37,6 +37,10 @@ try:
             "selfie",
             "me"]
 
+    # If you change these delays, you will exceed the Instagram API rate-limit
+    LIKE_DELAY = 36
+    REL_DELAY = 60
+
     # DO NOT CHANGE ANYTHING BELOW THIS POINT
 
     NO_FOLLOW = 0
@@ -71,6 +75,10 @@ try:
     def execPause(length):
         messageHandler('Paused for ' + tCol.FAIL + str(length) + tCol.WARNING + ' seconds...', "TIME", "WARNING")
         time.sleep(length)
+        
+    if ACCESS_TOKEN == "changeme" or CLIENT_ID == "changeme" or CLIENT_SECRET == "changeme" or IP == "changeme":
+        print messageHandler("You must change all variables which equal 'changeme'", "FAIL", "FAIL")
+        sys.exit(1)
 
     def headerFunction(header_line):
         if ':' not in header_line:
@@ -346,10 +354,10 @@ try:
         decider()
         begin()
 
-    messageHandler("----------------------", "FBOT", "HEADER")
-    messageHandler("  Welcome to Flibber  ", "FBOT", "HEADER")
-    messageHandler("  Chip (itschip.com)  ", "FBOT", "HEADER")
-    messageHandler("----------------------", "FBOT", "HEADER")
+    messageHandler("----------------------", "FLIB", "HEADER")
+    messageHandler("  Welcome to Flibber  ", "FLIB", "HEADER")
+    messageHandler("  Chip (itschip.com)  ", "FLIB", "HEADER")
+    messageHandler("----------------------", "FLIB", "HEADER")
     
     begin()
 
