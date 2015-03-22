@@ -1,5 +1,5 @@
 try:
-    import time, random, pycurl, hmac, urllib, simplejson, sys
+    import time, random, re, pycurl, hmac, urllib, simplejson, sys, calendar
     from hashlib import sha256
     try:
         from io import BytesIO
@@ -67,6 +67,13 @@ try:
         ENDC = '\033[0m'
         BOLD = '\033[1m'
         UNDERLINE = '\033[4m'
+        
+    def currentTime():
+        theTime = calendar.timegm(time.gmtime())
+        return theTime
+
+    lastLike = currentTime() - LIKE_DELAY
+    lastRelation = currentTime() - REL_DELAY
 
     def messageHandler(message, prefix = "IBOT", level = "OKGREEN"):
         print ( "[" + getattr(tCol, level) + prefix + tCol.ENDC + "] "
@@ -176,16 +183,21 @@ try:
     # Like `pictureID`
     def likePicture(pictureID):
         global totalLikes
+        global lastLike
         likeURL = INSTAGRAM_API + "media/%s/likes" % (pictureID)
         messageHandler("Liking picture " + pictureID, "LIKE")
+        timeDifference = currentTime() - lastLike
+        if timeDifference < LIKE_DELAY:
+            execPause(LIKE_DELAY - timeDifference)
         reqURL(likeURL, "", "POST")
         if response != "200":
             return
+        lastLike = currentTime()
         totalLikes = totalLikes + 1
-        execPause(LIKE_DELAY)
 
     # Follow or unfollow `userID`
     def modUser(userID, action):
+        global lastRelation
         modURL = INSTAGRAM_API + "users/%s/relationship" % (userID)
         post = {'action' : action}
         if action == "follow":
@@ -194,12 +206,15 @@ try:
         else:
             verbAct = "Unfollowing"
             swap = 1
+        timeDifference = currentTime() - lastLike
+        if timeDifference < REL_DELAY:
+            execPause(REL_DELAY - timeDifference)
         messageHandler(verbAct + " user " + userID, "RLAT")
         reqURL(modURL, post, "POST")
         if response != "200":
             return
+        lastRelation = currentTime()
         getRelationship(userID, "outgoing", swap)
-        execPause(REL_DELAY)
 
     # Return relationship to `userID`
     def getRelationship(userID, direction = "incoming", swap = 0):
