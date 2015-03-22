@@ -1,7 +1,7 @@
 # Flibber
 
 ####*verb*
-# to FLIB
+####to FLIB
 (To **F**ollow and **L**ike with my **I**nstagram **B**ot)
 
 ## See instructions on **lines 15 to 23**
