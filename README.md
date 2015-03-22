@@ -1,6 +1,9 @@
 # Flibber
 The Instagram Like and Follow Bot
 
+# FLIB
+*(The **F**ollow and **L**ike **I**nstagram **B**ot)*
+
 ## See instructions on **lines 15 to 23**
 
 #### Ensure both of these are checked in the Instagram client settings:
