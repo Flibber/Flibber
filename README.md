@@ -3,7 +3,7 @@ The Instagram Like and Follow Bot
 
 ## See instructions on **lines 15 to 23**
 
-### Ensure both of these are checked in the Instagram client settings:
+#### Ensure both of these are checked in the Instagram client settings:
 
 ![](https://i.starbs.net/wL8v)
 
