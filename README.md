@@ -1,8 +1,7 @@
 # Flibber
-The Instagram Like and Follow Bot
 
 # FLIB
-(The **F**ollow and **L**ike **I**nstagram **B**ot)
+(The **F**ollow and **L**iking **I**nstagram **B**ot)
 
 ## See instructions on **lines 15 to 23**
 
