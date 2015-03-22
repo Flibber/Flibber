@@ -38,8 +38,9 @@ try:
             "me"]
 
     # If you change these delays, you will exceed the Instagram API rate-limit
-    LIKE_DELAY = 36
-    REL_DELAY = 60
+    LIKE_DELAY = 12
+    REL_DELAY = 20
+    API_DELAY = 0
 
     # DO NOT CHANGE ANYTHING BELOW THIS POINT
 
@@ -73,7 +74,17 @@ try:
         return theTime
 
     lastLike = currentTime() - LIKE_DELAY
-    lastRelation = currentTime() - REL_DELAY
+    lastRel = currentTime() - REL_DELAY
+    lastAPI = currentTime() - API_DELAY
+
+    userArray = []
+    likeArray = []
+    APIArray = []
+    followArray = []
+    followedArray = []
+
+    relArray = []
+    picArray = []
 
     def messageHandler(message, prefix = "IBOT", level = "OKGREEN"):
         print ( "[" + getattr(tCol, level) + prefix + tCol.ENDC + "] "
@@ -126,6 +137,16 @@ try:
         pc.setopt(pycurl.HTTPHEADER, header)
 
         count = count + 1
+        
+        timeDifference = currentTime() - lastAPI
+        if timeDifference < API_DELAY:
+            execPause(API_DELAY - timeDifference)
+        if len(APIArray) > 0:
+            while APIArray[0] <= currentTime() - 3600:
+                del APIArray[0]
+            if len(relArray) >= 5000:
+                waitTime = currentTime() - APIArray[0] - 3600
+                execPause(waitTime)
 
         try:
             totalAPICalls = totalAPICalls + 1
@@ -162,6 +183,7 @@ try:
 
         if response == "200":
             messageHandler(response, "CODE")
+            APIArray.append(currentTime())
         elif response == "500":
             totalErrors = totalErrors + 1
             messageHandler(str(error_message), "ERRO", "FAIL")
@@ -174,14 +196,87 @@ try:
             messageHandler(error_message, "FAIL", "FAIL")
             if response == "429":
                 rates = [int(s) for s in error_message.split() if s.isdigit()]
-                messageHandler('Rate exceeded: ' + str(rates[0]) + '/' + str(rates[1]) + ' in the last hour.', "RATE", "WARNING")
+                messageHandler('Rate exceeded: ' + tCol.FAIL + str(rates[0]) + '/' + str(rates[1]) + tCol.WARNING + ' in the last hour.', "RATE", "WARNING")
                 execPause(300)
                 reqURL(url, post, proto)
 
         return dataDict
+    
+    def getUsers(next_cursor = None, num_users = 0, stage = 0):
+        global userArray
+        if stage == 0:
+            userURL = INSTAGRAM_API + "users/self/follows"
+            arrayName = followArray
+        elif stage == 1:
+            userURL = INSTAGRAM_API + "users/self/followed-by"
+            arrayName = followedArray
+        else:
+            userArray = list(set(followArray) - set(followedArray))
+            messageHandler(tCol.FAIL + tCol.BOLD + str(num_users) + tCol.ENDC + tCol.WARNING + " users added to interaction blacklist", "USER", "WARNING")
+            return
+
+        if next_cursor is not None:
+            post = {'cursor' : next_cursor}
+        else:
+            post = {}
+
+        data = reqURL(userURL, post)
+        if response != "200":
+            getUsers(next_cursor, num_users, stage)
+            return
+
+        dataPage = data["pagination"]
+
+        next_cursor = None
+        if dataPage:
+            next_cursor = data["pagination"]["next_cursor"]
+        for user in data["data"]:
+            for k, v in user.iteritems():
+                if k == "id":
+                    userID = v
+                    arrayName.append(userID)
+                    num_users = num_users + 1
+
+        if next_cursor is None:
+            stage = stage + 1
+        getUsers(next_cursor, num_users, stage)
+
+    def getPics(next_max_like_id = None, num_likes = 0):
+        likeURL = INSTAGRAM_API + "users/self/media/liked"
+
+        if next_max_like_id is not None:
+            post = {'max_like_id' : next_max_like_id}
+        else:
+            post = {}
+
+        data = reqURL(likeURL, post)
+        if response != "200":
+            getPics(next_max_like_id, num_likes)
+            return
+
+        dataPage = data["pagination"]
+
+        next_max_like_id = None
+        if dataPage:
+            next_max_like_id = data["pagination"]["next_max_like_id"]
+
+        for image in data["data"]:
+            for k, v in image.iteritems():
+                if k == "id":
+                    imageID = v
+                    picArray.append(imageID)
+                    num_likes = num_likes + 1
+
+        if next_max_like_id is not None:
+            getPics(next_max_like_id, num_likes)
+        else:
+            messageHandler(tCol.FAIL + tCol.BOLD + str(num_likes) + tCol.ENDC + tCol.WARNING + " pictures added to interaction blacklist", "LIKE", "WARNING")
 
     # Like `pictureID`
     def likePicture(pictureID):
+        if pictureID in picArray:
+            messageHandler("You already like picture " + tCol.WARNING + pictureID, "LIKE", "FAIL")
+            return
         global totalLikes
         global lastLike
         likeURL = INSTAGRAM_API + "media/%s/likes" % (pictureID)
@@ -189,31 +284,56 @@ try:
         timeDifference = currentTime() - lastLike
         if timeDifference < LIKE_DELAY:
             execPause(LIKE_DELAY - timeDifference)
+        if len(likeArray) > 0:
+            while likeArray[0] <= currentTime() - 3600:
+                del likeArray[0]
+            if len(likeArray) >= 100:
+                waitTime = currentTime() - likeArray[0] - 3600
+                execPause(waitTime)
         reqURL(likeURL, "", "POST")
         if response != "200":
             return
         lastLike = currentTime()
+        likeArray.append(currentTime())
         totalLikes = totalLikes + 1
 
     # Follow or unfollow `userID`
     def modUser(userID, action):
-        global lastRelation
+        global lastRel
         modURL = INSTAGRAM_API + "users/%s/relationship" % (userID)
         post = {'action' : action}
         if action == "follow":
+            if userID in userArray:
+                messageHandler("You are already following user " + tCol.WARNING + userID, "FLLW", "FAIL")
+                return
             verbAct = "Following"
             swap = 0
-        else:
+        elif action == "unfollow":
+            if userID not in userArray:
+                messageHandler("You are not following user " + tCol.WARNING + userID, "FLLW", "FAIL")
             verbAct = "Unfollowing"
             swap = 1
         timeDifference = currentTime() - lastLike
         if timeDifference < REL_DELAY:
             execPause(REL_DELAY - timeDifference)
+        if len(relArray) > 0:
+            while relArray[0] <= currentTime() - 3600:
+                del relArray[0]
+            if len(relArray) >= 100:
+                waitTime = currentTime() - relArray[0] - 3600
+                execPause(waitTime)
         messageHandler(verbAct + " user " + userID, "RLAT")
         reqURL(modURL, post, "POST")
         if response != "200":
             return
-        lastRelation = currentTime()
+        if action == "follow":
+            if userID not in userArray:
+                userArray.append(userID)
+        elif action == "unfollow":
+            if userID in userArray:
+                userArray.remove(userID)
+        lastRel = currentTime()
+        relArray.append(currentTime())
         getRelationship(userID, "outgoing", swap)
 
     # Return relationship to `userID`
@@ -288,47 +408,54 @@ try:
         if response != "200":
             return
         #numResults = len(data['data'])
-        pictureID=0
+        #pictureID = 0
         for likeObj in data['data']:
-                pictureID = likeObj['id']
-                #paginationId = data["pagination"]['next_max_id']
-                user = likeObj['user']
-                userID = user['id']
-                likePicture(pictureID)
-                if(ACTION==LIKE_FOLLOW):
-                    modUser(userID, "follow")
-                    followCount=followCount+1
-                likeCount = likeCount + 1
+            #pictureID = likeObj['id']
+            #paginationId = data["pagination"]['next_max_id']
+            user = likeObj['user']
+            userID = user['id']
+            if userID not in userArray:
+                if (ACTION == LIKE_FOLLOW):
+                    likeCount = likeCount + likeAndFollowUser(userID)
+                    followCount = followCount + 1
+                else:
+                    likeCount = likeCount + likeAndFollowUser(userID)
                 secs = random.randint(1, MAX_SECS)
                 time.sleep(secs)
-                if (likeCount % 10 == 0):
-                    messageHandler('Liked ' + str(likeCount) + ' pictures from #' + tag, 'LIKE')
+            if (likeCount % 10 == 0 and likeCount != 0):
+                messageHandler('Liked ' + str(likeCount) + ' pictures from #' + tag, 'LIKE')
+            if (ACTION == LIKE_FOLLOW):
                 if (followCount % 10 == 0 and followCount != 0):
                     messageHandler('Followed ' + str(followCount) + ' users from #' + tag, 'FLLW')
+                if (followCount == max_results):
+                    break
+            elif (ACTION == LIKE):
                 if (likeCount == max_results):
                     break
-        if(likeCount != max_results):
-            likeUsers(max_results, max_id, tag, likeCount, followCount)
+        #if(likeCount != max_results):
+        #    likeUsers(max_results, max_id, tag, likeCount, followCount)
         messageHandler('Liked ' + str(likeCount) + ' pictures and followed ' + str(followCount) + ' users from tag #' + tag, 'TAGS')
         return
 
     # Like and follow users
-    def likeAndFollowUser(userID):
+    def likeAndFollowUser(userID, follow = True):
         numLikesFollows=0
         urlUserMedia = INSTAGRAM_API + "users/%s/media/recent" % (userID)
         data = reqURL(urlUserMedia)
         if response != "200":
             return
-        picsToLike = random.randint(1, 3)
+        picsToLike = random.randint(1, 4)
         messageHandler("Liking " + str(picsToLike) + " pictures for user " + str(userID))
-        countPicViews=0
+        countPicViews = 0
         for picture in data['data']:
-            likePicture(picture['id'])
-            countPicViews = countPicViews+1
-            numLikesFollows = numLikesFollows+1
-            if(countPicViews == picsToLike):
-                break
-        modUser(userID, "follow")
+            if picture['id'] not in likeArray:
+                likePicture(picture['id'])
+                countPicViews = countPicViews + 1
+                numLikesFollows = numLikesFollows + 1
+                if(countPicViews == picsToLike):
+                    break
+        if follow:
+            modUser(userID, "follow")
         return numLikesFollows
 
     def popFunction():
@@ -373,7 +500,9 @@ try:
     messageHandler("  Welcome to Flibber  ", "FLIB", "HEADER")
     messageHandler("  Chip (itschip.com)  ", "FLIB", "HEADER")
     messageHandler("----------------------", "FLIB", "HEADER")
-    
+
+    getUsers()
+    getPics()
     begin()
 
 except KeyboardInterrupt:
