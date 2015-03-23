@@ -58,6 +58,8 @@ try:
     totalAPICalls = 0
     totalLikes = 0
     totalErrors = 0
+    
+    globErrorMessage = ""
 
     class tCol:
         HEADER = '\033[95m'
@@ -86,7 +88,7 @@ try:
     relArray = []
     picArray = []
 
-    def messageHandler(message, prefix = "IBOT", level = "OKGREEN"):
+    def messageHandler(message, prefix = "FLIB", level = "OKGREEN"):
         print ( "[" + getattr(tCol, level) + prefix + tCol.ENDC + "] "
                 + getattr(tCol, level) + message + tCol.ENDC )
 
@@ -108,8 +110,9 @@ try:
         headers[name] = value
 
     def reqURL(url, post = "", proto = "GET"):
-        global count, dataDict, response
+        global count, dataDict, response, globErrorMessage
         global totalAPICalls, totalErrors
+
         bytesIO = BytesIO()
         pc = pycurl.Curl()
 
@@ -186,6 +189,11 @@ try:
             APIArray.append(currentTime())
         elif response == "500":
             totalErrors = totalErrors + 1
+            globErrorMessage = str(error_message)
+            if globErrorMessage == "(23, 'Failed writing header')":
+                print ""
+                messageHandler(tCol.BOLD + "Keyboard Interrupt!", "INPT", "FAIL")
+                sys.exit(1)
             messageHandler(str(error_message), "ERRO", "FAIL")
         elif response != "200":
             totalErrors = totalErrors + 1
@@ -222,6 +230,9 @@ try:
 
         data = reqURL(userURL, post)
         if response != "200":
+            if globErrorMessage == "(23, 'Failed writing header')":
+                sys.exit(1)
+            messageHandler("Retrying request...", "RTRY", "WARNING")
             getUsers(next_cursor, num_users, stage)
             return
 
@@ -251,6 +262,9 @@ try:
 
         data = reqURL(likeURL, post)
         if response != "200":
+            if globErrorMessage == "(23, 'Failed writing header')":
+                sys.exit(1)
+            messageHandler("Retrying request...", "RTRY", "WARNING")
             getPics(next_max_like_id, num_likes)
             return
 
@@ -289,7 +303,8 @@ try:
                 del likeArray[0]
             if len(likeArray) >= 100:
                 waitTime = currentTime() - likeArray[0] - 3600
-                execPause(waitTime)
+                if waitTime > 0:
+                    execPause(waitTime)
         reqURL(likeURL, "", "POST")
         if response != "200":
             return
@@ -321,7 +336,8 @@ try:
                 del relArray[0]
             if len(relArray) >= 100:
                 waitTime = currentTime() - relArray[0] - 3600
-                execPause(waitTime)
+                if waitTime > 0:
+                    execPause(waitTime)
         messageHandler(verbAct + " user " + userID, "RLAT")
         reqURL(modURL, post, "POST")
         if response != "200":
@@ -409,6 +425,8 @@ try:
             return
         #numResults = len(data['data'])
         #pictureID = 0
+        likeCount = 0
+        followCount = 0
         for likeObj in data['data']:
             #pictureID = likeObj['id']
             #paginationId = data["pagination"]['next_max_id']
@@ -416,10 +434,10 @@ try:
             userID = user['id']
             if userID not in userArray:
                 if (ACTION == LIKE_FOLLOW):
-                    likeCount = likeCount + likeAndFollowUser(userID)
+                    likeCount = likeCount + int(likeAndFollowUser(userID))
                     followCount = followCount + 1
                 else:
-                    likeCount = likeCount + likeAndFollowUser(userID)
+                    likeCount = likeCount + int(likeAndFollowUser(userID))
                 secs = random.randint(1, MAX_SECS)
                 time.sleep(secs)
             if (likeCount % 10 == 0 and likeCount != 0):
@@ -508,6 +526,16 @@ try:
 except KeyboardInterrupt:
     print ""
     messageHandler(tCol.BOLD + "Keyboard Interrupt!", "INPT", "FAIL")
+
+except Exception as e:
+    print ""
+    messageHandler(tCol.BOLD + e, "EXEP", "FAIL")
+
+else:
+    print ""
+    messageHandler(tCol.BOLD + "Unknown Error!", "ERRO", "FAIL")
+
+finally:
     print ""
     messageHandler(tCol.UNDERLINE + "Statistics from run:", "STAT", "WARNING")
     messageHandler("Total Unfollows: " + tCol.BOLD + str(totalUnfollows), "STAT", "FAIL")
