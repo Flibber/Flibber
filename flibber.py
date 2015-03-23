@@ -58,7 +58,7 @@ try:
     totalAPICalls = 0
     totalLikes = 0
     totalErrors = 0
-    
+
     globErrorMessage = ""
 
     class tCol:
@@ -70,7 +70,7 @@ try:
         ENDC = '\033[0m'
         BOLD = '\033[1m'
         UNDERLINE = '\033[4m'
-        
+
     def currentTime():
         theTime = calendar.timegm(time.gmtime())
         return theTime
@@ -95,7 +95,7 @@ try:
     def execPause(length):
         messageHandler('Paused for ' + tCol.FAIL + str(length) + tCol.WARNING + ' seconds...', "TIME", "WARNING")
         time.sleep(length)
-        
+
     if ACCESS_TOKEN == "changeme" or CLIENT_ID == "changeme" or CLIENT_SECRET == "changeme" or IP == "changeme":
         print messageHandler("You must change all variables which equal 'changeme'", "FAIL", "FAIL")
         sys.exit(1)
@@ -109,7 +109,7 @@ try:
         name = name.lower()
         headers[name] = value
 
-    def reqURL(url, post = "", proto = "GET"):
+    def reqURL(url, post = "", proto = "GET", reqType = "API"):
         global count, dataDict, response, globErrorMessage
         global totalAPICalls, totalErrors
 
@@ -140,7 +140,7 @@ try:
         pc.setopt(pycurl.HTTPHEADER, header)
 
         count = count + 1
-        
+
         timeDifference = currentTime() - lastAPI
         if timeDifference < API_DELAY:
             execPause(API_DELAY - timeDifference)
@@ -205,11 +205,31 @@ try:
             if response == "429":
                 rates = [int(s) for s in error_message.split() if s.isdigit()]
                 messageHandler('Rate exceeded: ' + tCol.FAIL + str(rates[0]) + '/' + str(rates[1]) + tCol.WARNING + ' in the last hour.', "RATE", "WARNING")
-                execPause(300)
-                reqURL(url, post, proto)
+                if reqType == "Like":
+                    rateArray = likeArray
+                    rateLen = 100
+                elif reqType == "Relation":
+                    rateArray = relArray
+                    rateLen = 100
+                else:
+                    rateArray = APIArray
+                    rateLen = 5000
+                if int(rates[0]) >= rateLen:
+                    rateDiff = rateLen - len(rateArray)
+                    if rateDiff >= 0:
+                        while len(rateArray) <= rateLen:
+                            rateArray.append(currentTime())
+                        rateArray[0] = currentTime() - 3900
+                if len(rateArray) > 0:
+                    if len(rateArray) >= rateLen:
+                        waitTime = currentTime() - rateArray[0] - 3600
+                        if waitTime > 0:
+                            execPause(waitTime)
+                #execPause(300)
+                reqURL(url, post, proto, reqType)
 
         return dataDict
-    
+
     def getUsers(next_cursor = None, num_users = 0, stage = 0):
         global userArray
         if stage == 0:
@@ -305,7 +325,7 @@ try:
                 waitTime = currentTime() - likeArray[0] - 3600
                 if waitTime > 0:
                     execPause(waitTime)
-        reqURL(likeURL, "", "POST")
+        reqURL(likeURL, "", "POST", "Like")
         if response != "200":
             return
         lastLike = currentTime()
@@ -339,7 +359,7 @@ try:
                 if waitTime > 0:
                     execPause(waitTime)
         messageHandler(verbAct + " user " + userID, "RLAT")
-        reqURL(modURL, post, "POST")
+        reqURL(modURL, post, "POST", "Relation")
         if response != "200":
             return
         if action == "follow":
@@ -529,7 +549,7 @@ except KeyboardInterrupt:
 
 except Exception as e:
     print ""
-    messageHandler(tCol.BOLD + e, "EXEP", "FAIL")
+    messageHandler(tCol.BOLD + str(e), "EXEP", "FAIL")
 
 else:
     print ""
