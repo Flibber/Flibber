@@ -10,6 +10,7 @@ try:
     LIKE = 2
     LIKE_FOLLOW = 3
     UNFOLLOW = 4
+    UNFOLLOW_ALL = 5
 
     #
     # 1: Swap out <CLIENT_ID_HERE> for your CLIENT_ID and <REDIRECT_URI_HERE> for your REDIRECT_URI, visit the URL to return the CODE (will be in return URI):
@@ -38,8 +39,8 @@ try:
             "me"]
 
     # If you change these delays, you will exceed the Instagram API rate-limit
-    LIKE_DELAY = 12
-    REL_DELAY = 20
+    LIKE_DELAY = 36
+    REL_DELAY = 60
     API_DELAY = 0
 
     # DO NOT CHANGE ANYTHING BELOW THIS POINT
@@ -111,6 +112,7 @@ try:
 
     def reqURL(url, post = "", proto = "GET", reqType = "API"):
         global count, dataDict, response, globErrorMessage
+        global API_DELAY, LIKE_DELAY, REL_DELAY
         global totalAPICalls, totalErrors
 
         bytesIO = BytesIO()
@@ -147,7 +149,7 @@ try:
         if len(APIArray) > 0:
             while APIArray[0] <= currentTime() - 3600:
                 del APIArray[0]
-            if len(relArray) >= 5000:
+            if len(relArray) >= 4999:
                 waitTime = currentTime() - APIArray[0] - 3600
                 execPause(waitTime)
 
@@ -202,30 +204,31 @@ try:
             messageHandler(response, "CODE", "FAIL")
             messageHandler(error_type, "TYPE", "FAIL")
             messageHandler(error_message, "FAIL", "FAIL")
+            if response == "400" and error_type == "OAuthAccessTokenException":
+                sys.exit(1)
             if response == "429":
                 rates = [int(s) for s in error_message.split() if s.isdigit()]
                 messageHandler('Rate exceeded: ' + tCol.FAIL + str(rates[0]) + '/' + str(rates[1]) + tCol.WARNING + ' in the last hour.', "RATE", "WARNING")
                 if reqType == "Like":
+                    LIKE_DELAY = LIKE_DELAY + 1
                     rateArray = likeArray
-                    rateLen = 100
+                    rateLen = 99
                 elif reqType == "Relation":
+                    REL_DELAY = REL_DELAY + 1
                     rateArray = relArray
-                    rateLen = 100
+                    rateLen = 99
                 else:
+                    API_DELAY = API_DELAY + 1
                     rateArray = APIArray
-                    rateLen = 5000
-                if int(rates[0]) >= rateLen:
-                    rateDiff = rateLen - len(rateArray)
-                    if rateDiff >= 0:
-                        while len(rateArray) <= rateLen:
-                            rateArray.append(currentTime())
-                        rateArray[0] = currentTime() - 3900
-                if len(rateArray) > 0:
-                    if len(rateArray) >= rateLen:
-                        waitTime = currentTime() - rateArray[0] - 3600
-                        if waitTime > 0:
-                            execPause(waitTime)
-                #execPause(300)
+                    rateLen = 4999
+                rateDiff = rateLen - len(rateArray)
+                if rateDiff > 0:    
+                    while len(rateArray) < rateLen:
+                        rateArray.append(currentTime())
+                rateArray[0] = currentTime() - 3900
+                waitTime = 0
+                waitTime = currentTime() - rateArray[0] - 3600
+                execPause(waitTime)
                 reqURL(url, post, proto, reqType)
 
         return dataDict
@@ -321,7 +324,7 @@ try:
         if len(likeArray) > 0:
             while likeArray[0] <= currentTime() - 3600:
                 del likeArray[0]
-            if len(likeArray) >= 100:
+            if len(likeArray) >= 99:
                 waitTime = currentTime() - likeArray[0] - 3600
                 if waitTime > 0:
                     execPause(waitTime)
@@ -348,13 +351,13 @@ try:
                 messageHandler("You are not following user " + tCol.WARNING + userID, "FLLW", "FAIL")
             verbAct = "Unfollowing"
             swap = 1
-        timeDifference = currentTime() - lastLike
+        timeDifference = currentTime() - lastRel
         if timeDifference < REL_DELAY:
             execPause(REL_DELAY - timeDifference)
         if len(relArray) > 0:
             while relArray[0] <= currentTime() - 3600:
                 del relArray[0]
-            if len(relArray) >= 100:
+            if len(relArray) >= 99:
                 waitTime = currentTime() - relArray[0] - 3600
                 if waitTime > 0:
                     execPause(waitTime)
@@ -392,11 +395,13 @@ try:
 
         if direction == "outgoing":
             if outgoing == "follows":
-                totalFollows = totalFollows + 1
+                if swap == 0:
+                    totalFollows = totalFollows + 1
                 messageHandler("You are following user " + userID, "GREL", followLevel)
                 return FOLLOWS
             else:
-                totalUnfollows = totalUnfollows + 1
+                if swap == 1:
+                    totalUnfollows = totalUnfollows + 1
                 messageHandler("You are not following user " + userID, "GREL", noFollowLevel)
                 return NO_FOLLOW
         else:
@@ -408,32 +413,22 @@ try:
                 return FOLLOWS
 
     # Unfollow users who are not following back
-    def unfollowUsers(next_url = None, num_unfollows = 0):
-        if next_url == None:
-            urlUserMedia = INSTAGRAM_API + "users/self/follows"
-        else:
-            urlUserMedia = next_url
-        data = reqURL(urlUserMedia)
-        if response != "200":
-            return
-        next_url = None
-        if data["pagination"] != {}:
-            next_url = data["pagination"]["next_url"]
-        for user in data["data"]:
-            for k, v in user.iteritems():
-                if k == "id":
-                    userID = v
-            relationship = getRelationship(userID)
-            if relationship == NO_FOLLOW:
+    def unfollowUsers(allUsers = False):
+        num_unfollows = 0
+        for userID in userArray:
+            if allUsers == True:
                 modUser(userID, "unfollow")
-                num_unfollows = num_unfollows+1
+                num_unfollows = num_unfollows + 1
+            elif allUsers == False:
+                relationship = getRelationship(userID)
+                if relationship == NO_FOLLOW:
+                    modUser(userID, "unfollow")
+                    num_unfollows = num_unfollows + 1
             secs = random.randint(1, MAX_SECS)
             time.sleep(secs)
         print num_unfollows
         if num_unfollows % 10 == 0:
             print "Unfollowed %s users " % num_unfollows
-        if next_url is not None:
-            unfollowUsers(next_url, num_unfollows)
         messageHandler("Number of users unfollowed is " + str(num_unfollows), "UNFL")
         return num_unfollows
 
@@ -454,10 +449,10 @@ try:
             userID = user['id']
             if userID not in userArray:
                 if (ACTION == LIKE_FOLLOW):
-                    likeCount = likeCount + int(likeAndFollowUser(userID))
+                    likeCount = likeCount + likeAndFollowUser(userID)
                     followCount = followCount + 1
                 else:
-                    likeCount = likeCount + int(likeAndFollowUser(userID))
+                    likeCount = likeCount + likeAndFollowUser(userID)
                 secs = random.randint(1, MAX_SECS)
                 time.sleep(secs)
             if (likeCount % 10 == 0 and likeCount != 0):
@@ -497,7 +492,7 @@ try:
         return numLikesFollows
 
     def popFunction():
-        urlPopular= INSTAGRAM_API + "media/popular"
+        urlPopular = INSTAGRAM_API + "media/popular"
         data = reqURL(urlPopular)
         if response != "200":
             return
@@ -523,12 +518,16 @@ try:
 
     def decider():
         if(ACTION == LIKE or ACTION == LIKE_FOLLOW):
+            getPics()
             for tag in TAGS:
                 likeUsers(MAX_COUNT, 0, tag, 0, 0)
         elif(ACTION==POPULAR):
+            getPics()
             popFunction()
         elif(ACTION==UNFOLLOW):
-            unfollowUsers()
+            unfollowUsers(False)
+        elif(ACTION==UNFOLLOW_ALL):
+            unfollowUsers(True)
 
     def begin():
         decider()
@@ -540,7 +539,6 @@ try:
     messageHandler("----------------------", "FLIB", "HEADER")
 
     getUsers()
-    getPics()
     begin()
 
 except KeyboardInterrupt:
