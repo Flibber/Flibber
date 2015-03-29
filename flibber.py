@@ -11,6 +11,7 @@ try:
     LIKE_FOLLOW = 3
     UNFOLLOW = 4
     UNFOLLOW_ALL = 5
+    SANITIZE = 6
 
     #
     # 1: Swap out <CLIENT_ID_HERE> for your CLIENT_ID and <REDIRECT_URI_HERE> for your REDIRECT_URI, visit the URL to return the CODE (will be in return URI):
@@ -222,7 +223,7 @@ try:
                     rateArray = APIArray
                     rateLen = 4999
                 rateDiff = rateLen - len(rateArray)
-                if rateDiff > 0:    
+                if rateDiff > 0:
                     while len(rateArray) < rateLen:
                         rateArray.append(currentTime())
                 rateArray[0] = currentTime() - 3900
@@ -274,6 +275,41 @@ try:
         if next_cursor is None:
             stage = stage + 1
         getUsers(next_cursor, num_users, stage)
+
+    def getFollowing(next_cursor = None, num_users = 0):
+        global userArray
+        userURL = INSTAGRAM_API + "users/self/follows"
+
+        if next_cursor is not None:
+            post = {'cursor' : next_cursor}
+        else:
+            post = {}
+
+        data = reqURL(userURL, post)
+        if response != "200":
+            if globErrorMessage == "(23, 'Failed writing header')":
+                sys.exit(1)
+            messageHandler("Retrying request...", "RTRY", "WARNING")
+            getFollowing(next_cursor, num_users)
+            return
+
+        dataPage = data["pagination"]
+
+        next_cursor = None
+        if dataPage:
+            next_cursor = data["pagination"]["next_cursor"]
+        for user in data["data"]:
+            for k, v in user.iteritems():
+                if k == "id":
+                    userID = v
+                    followArray.append(userID)
+                    num_users = num_users + 1
+
+        if next_cursor is None:
+            userArray = list(set(followArray))
+            messageHandler(tCol.FAIL + tCol.BOLD + str(num_users) + tCol.ENDC + tCol.WARNING + " users added to interaction blacklist", "USER", "WARNING")
+            return
+        getFollowing(next_cursor, num_users)
 
     def getPics(next_max_like_id = None, num_likes = 0):
         likeURL = INSTAGRAM_API + "users/self/media/liked"
@@ -338,18 +374,35 @@ try:
     # Follow or unfollow `userID`
     def modUser(userID, action):
         global lastRel
-        modURL = INSTAGRAM_API + "users/%s/relationship" % (userID)
+        userURL = INSTAGRAM_API + "users/%s" % (userID)
+        modURL = userURL + "/relationship"
+        data = reqURL(userURL)
+        if response != "200":
+            return
+        try:
+            followsCount = int(data['data']['counts']['follows'])
+            followedByCount = int(data['data']['counts']['followed_by'])
+        except Exception:
+            messageHandler("Failed to get follow counts. Skipping...", "FLLW", "FAIL")
+            return
         post = {'action' : action}
         if action == "follow":
             if userID in userArray:
                 messageHandler("You are already following user " + tCol.WARNING + userID, "FLLW", "FAIL")
+                return
+            if followsCount < (followedByCount / 2):
+                messageHandler("User " + tCol.WARNING + userID + tCol.FAIL + " is following less than half of their follower count. Skipping...", "FLLW", "FAIL")
                 return
             verbAct = "Following"
             swap = 0
         elif action == "unfollow":
             if userID not in userArray:
                 messageHandler("You are not following user " + tCol.WARNING + userID, "FLLW", "FAIL")
+                return
             verbAct = "Unfollowing"
+            swap = 1
+        elif action == "block":
+            verbAct = "Blocking"
             swap = 1
         timeDifference = currentTime() - lastRel
         if timeDifference < REL_DELAY:
@@ -368,12 +421,13 @@ try:
         if action == "follow":
             if userID not in userArray:
                 userArray.append(userID)
-        elif action == "unfollow":
+        else:
             if userID in userArray:
                 userArray.remove(userID)
         lastRel = currentTime()
         relArray.append(currentTime())
-        getRelationship(userID, "outgoing", swap)
+        if action != "block":
+            getRelationship(userID, "outgoing", swap)
 
     # Return relationship to `userID`
     def getRelationship(userID, direction = "incoming", swap = 0):
@@ -430,6 +484,9 @@ try:
         if num_unfollows % 10 == 0:
             print "Unfollowed %s users " % num_unfollows
         messageHandler("Number of users unfollowed is " + str(num_unfollows), "UNFL")
+        global ACTION
+        ACTION = LIKE_FOLLOW
+        begin()
         return num_unfollows
 
     def likeUsers(max_results, max_id, tag, likeCount, followCount):
@@ -449,10 +506,10 @@ try:
             userID = user['id']
             if userID not in userArray:
                 if (ACTION == LIKE_FOLLOW):
-                    likeCount = likeCount + likeAndFollowUser(userID)
+                    likeCount = likeCount + int(likeAndFollowUser(userID))
                     followCount = followCount + 1
                 else:
-                    likeCount = likeCount + likeAndFollowUser(userID)
+                    likeCount = likeCount + int(likeAndFollowUser(userID))
                 secs = random.randint(1, MAX_SECS)
                 time.sleep(secs)
             if (likeCount % 10 == 0 and likeCount != 0):
@@ -473,7 +530,16 @@ try:
     # Like and follow users
     def likeAndFollowUser(userID, follow = True):
         numLikesFollows=0
-        urlUserMedia = INSTAGRAM_API + "users/%s/media/recent" % (userID)
+        userURL = INSTAGRAM_API + "users/%s" % (userID)
+        urlUserMedia = userURL+ "/media/recent"
+        data = reqURL(userURL)
+        if response != "200":
+            return
+        followsCount = data['data']['counts']['follows']
+        followedByCount = data['data']['counts']['followed_by']
+        if followsCount < (followedByCount / 2):
+            messageHandler("User " + tCol.WARNING + userID + tCol.FAIL + " is following less than half of their follower count. Skipping...", "FLLW", "FAIL")
+            return
         data = reqURL(urlUserMedia)
         if response != "200":
             return
@@ -516,18 +582,77 @@ try:
         messageHandler("Followed " + str(followCount) + " users", "followCount")
         messageHandler("Liked " + str(likeCount) + " pictures", "LIKE")
 
+    def sanitizePopUsers():
+        num_blocks = 0
+        urlPopular = INSTAGRAM_API + "media/popular"
+        data = reqURL(urlPopular)
+        if response != "200":
+            pass
+        for obj in data['data']:
+            try:
+                for key, value in obj['caption'].iteritems():
+                    if key == "text":
+                        textCap = value
+                        isBad = "my bio"
+                        if isBad in textCap:
+                            for key, value in obj['caption']['from'].iteritems():
+                                if key == "id":
+                                    modUser(value, "block")
+                                    sanitizePopUsers()
+                                    return
+            except Exception:
+                continue
+        secs = random.randint(1, MAX_SECS)
+        time.sleep(secs)
+        sanitizePopUsers()
+        messageHandler("Number of users blocked is " + str(num_blocks), "BLKD")
+        return num_blocks
+
+    def sanitizeUsers():
+        num_blocks = 0
+        for userID in userArray:
+            urlUserMedia = INSTAGRAM_API + "users/%s/media/recent" % (userID)
+            data = reqURL(urlUserMedia)
+            if response != "200":
+                pass
+            for obj in data['data']:
+                try:
+                    for key, value in obj['caption'].iteritems():
+                        if key == "text":
+                            textCap = value
+                            isBad = "my bio"
+                            if isBad in textCap:
+                                modUser(userID, "block")
+                                sanitizeUsers()
+                                return
+                except Exception:
+                    continue
+            secs = random.randint(1, MAX_SECS)
+            time.sleep(secs)
+        messageHandler("Number of users blocked is " + str(num_blocks), "BLKD")
+        return num_blocks
+
     def decider():
         if(ACTION == LIKE or ACTION == LIKE_FOLLOW):
+            getUsers()
             getPics()
             for tag in TAGS:
                 likeUsers(MAX_COUNT, 0, tag, 0, 0)
         elif(ACTION==POPULAR):
+            getUsers()
             getPics()
             popFunction()
         elif(ACTION==UNFOLLOW):
+            getUsers()
             unfollowUsers(False)
         elif(ACTION==UNFOLLOW_ALL):
+            getFollowing()
             unfollowUsers(True)
+        elif(ACTION==SANITIZE):
+            getUsers()
+            sanitizePopUsers()
+        else:
+            messageHandler("Invalid ACTION specified", "ACTO", "FAIL")
 
     def begin():
         decider()
@@ -538,7 +663,6 @@ try:
     messageHandler("  Chip (itschip.com)  ", "FLIB", "HEADER")
     messageHandler("----------------------", "FLIB", "HEADER")
 
-    getUsers()
     begin()
 
 except KeyboardInterrupt:
