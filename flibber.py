@@ -9,7 +9,7 @@ try:
     import simplejson
     import sys
     import calendar
-    from options import *
+    import options
     from hashlib import sha256
     try:
         from io import BytesIO
@@ -69,16 +69,21 @@ try:
     picArray = []
 
     def msg(message, prefix="FLIB", level="OKGREEN"):
-        print ("[" + getattr(tCol, level) + prefix + tCol.ENDC + "] "
-               + getattr(tCol, level) + message + tCol.ENDC)
+        print ("[" + getattr(tCol, level) + prefix + tCol.ENDC + "] " +
+               getattr(tCol, level) + message + tCol.ENDC)
 
     def execPause(length):
         msg('Paused for ' + tCol.FAIL + str(length) +
             tCol.WARNING + ' seconds...', "TIME", "WARNING")
         time.sleep(length)
 
-    if ACCESS_TOKEN == "changeme" or CLIENT_ID == "changeme" or CLIENT_SECRET == "changeme" or IP == "changeme":
-        print msg("You must change all variables which equal 'changeme'", "FAIL", "FAIL")
+    if options.ACCESS_TOKEN == "changeme" or options.CLIENT_ID == "changeme":
+        print msg("You must change all variables which equal 'changeme'",
+                  "FAIL", "FAIL")
+        sys.exit(1)
+    elif options.CLIENT_SECRET == "changeme" or options.IP == "changeme":
+        print msg("You must change all variables which equal 'changeme'",
+                  "FAIL", "FAIL")
         sys.exit(1)
 
     def headerFunction(header_line):
@@ -98,12 +103,13 @@ try:
         bytesIO = BytesIO()
         pc = pycurl.Curl()
 
-        signature = hmac.new(CLIENT_SECRET, IP, sha256).hexdigest()
-        header = '|'.join([IP, signature])
+        signature = hmac.new(
+            options.CLIENT_SECRET, options.IP, sha256).hexdigest()
+        header = '|'.join([options.IP, signature])
         header = ["X-Insta-Forwarded-For: " + header]
 
-        post_data = {'access_token': ACCESS_TOKEN,
-                     'client_id': CLIENT_ID}
+        post_data = {'options.ACCESS_TOKEN': options.ACCESS_TOKEN,
+                     'options.CLIENT_ID': options.CLIENT_ID}
         post_data.update(post)
         postfields = urllib.urlencode(post_data)
 
@@ -152,7 +158,8 @@ try:
             dataDict = simplejson.loads(body)
             msg(tCol.BOLD + 'Request #' + str(count), "NUM#", "HEADER")
             msg('Remaining API calls: ' + tCol.FAIL +
-                headers['x-ratelimit-remaining'] + '/' + headers['x-ratelimit-limit'] + tCol.ENDC, "RATE", "OKBLUE")
+                headers['x-ratelimit-remaining'] + '/' +
+                headers['x-ratelimit-limit'] + tCol.ENDC, "RATE", "OKBLUE")
         except Exception as e:
             dataDict = ""
             response = "500"
@@ -189,7 +196,8 @@ try:
             if response == "429":
                 rates = [int(s) for s in error_message.split() if s.isdigit()]
                 msg('Rate exceeded: ' + tCol.FAIL + str(rates[0]) + '/' + str(
-                    rates[1]) + tCol.WARNING + ' in the last hour.', "RATE", "WARNING")
+                    rates[1]) + tCol.WARNING + ' in the last hour.',
+                    "RATE", "WARNING")
                 if reqType == "Like":
                     LIKE_DELAY = LIKE_DELAY + 1
                     rateArray = likeArray
@@ -217,14 +225,15 @@ try:
     def getUsers(next_cursor=None, num_users=0, stage=0):
         global userArray
         if stage == 0:
-            userURL = INSTAGRAM_API + "users/self/follows"
+            userURL = options.INSTAGRAM_API + "users/self/follows"
             arrayName = followArray
         elif stage == 1:
-            userURL = INSTAGRAM_API + "users/self/followed-by"
+            userURL = options.INSTAGRAM_API + "users/self/followed-by"
             arrayName = followedArray
         else:
             userArray = list(set(followArray) - set(followedArray))
-            msg(tCol.FAIL + tCol.BOLD + str(num_users) + tCol.ENDC + tCol.WARNING +
+            msg(tCol.FAIL + tCol.BOLD + str(num_users) + tCol.ENDC +
+                tCol.WARNING +
                 " users added to interaction blacklist", "USER", "WARNING")
             return
 
@@ -259,7 +268,7 @@ try:
 
     def getFollowing(next_cursor=None, num_users=0):
         global userArray
-        userURL = INSTAGRAM_API + "users/self/follows"
+        userURL = options.INSTAGRAM_API + "users/self/follows"
 
         if next_cursor is not None:
             post = {'cursor': next_cursor}
@@ -288,13 +297,14 @@ try:
 
         if next_cursor is None:
             userArray = list(set(followArray))
-            msg(tCol.FAIL + tCol.BOLD + str(num_users) + tCol.ENDC + tCol.WARNING +
+            msg(tCol.FAIL + tCol.BOLD + str(num_users) + tCol.ENDC +
+                tCol.WARNING +
                 " users added to interaction blacklist", "USER", "WARNING")
             return
         getFollowing(next_cursor, num_users)
 
     def getPics(next_max_like_id=None, num_likes=0):
-        likeURL = INSTAGRAM_API + "users/self/media/liked"
+        likeURL = options.INSTAGRAM_API + "users/self/media/liked"
 
         if next_max_like_id is not None:
             post = {'max_like_id': next_max_like_id}
@@ -325,7 +335,8 @@ try:
         if next_max_like_id is not None:
             getPics(next_max_like_id, num_likes)
         else:
-            msg(tCol.FAIL + tCol.BOLD + str(num_likes) + tCol.ENDC + tCol.WARNING +
+            msg(tCol.FAIL + tCol.BOLD + str(num_likes) + tCol.ENDC +
+                tCol.WARNING +
                 " pictures added to interaction blacklist", "LIKE", "WARNING")
 
     # Like `pictureID`
@@ -336,7 +347,7 @@ try:
             return
         global totalLikes
         global lastLike
-        likeURL = INSTAGRAM_API + "media/%s/likes" % (pictureID)
+        likeURL = options.INSTAGRAM_API + "media/%s/likes" % (pictureID)
         msg("Liking picture " + pictureID, "LIKE")
         timeDifference = currentTime() - lastLike
         if timeDifference < LIKE_DELAY:
@@ -358,7 +369,7 @@ try:
     # Follow or unfollow `userID`
     def modUser(userID, action):
         global lastRel
-        userURL = INSTAGRAM_API + "users/%s" % (userID)
+        userURL = options.INSTAGRAM_API + "users/%s" % (userID)
         modURL = userURL + "/relationship"
         data = reqURL(userURL)
         if response != "200":
@@ -377,7 +388,8 @@ try:
                 return
             if followsCount < (followedByCount / 2):
                 msg("User " + tCol.WARNING + userID + tCol.FAIL +
-                    " is following less than half of their follower count. Skipping...", "FLLW", "FAIL")
+                    " is following less than half of their follower count.",
+                    "FLLW", "FAIL")
                 return
             verbAct = "Following"
             swap = 0
@@ -419,7 +431,7 @@ try:
     # Return relationship to `userID`
     def getRelationship(userID, direction="incoming", swap=0):
         global totalFollows, totalUnfollows
-        followURL = INSTAGRAM_API + "users/%s/relationship" % (userID)
+        followURL = options.INSTAGRAM_API + "users/%s/relationship" % (userID)
         data = reqURL(followURL)
         if response != "200":
             return
@@ -459,38 +471,33 @@ try:
     def unfollowUsers(allUsers=False):
         num_unfollows = 0
         for userID in userArray:
-            if allUsers == True:
+            if allUsers is True:
                 modUser(userID, "unfollow")
                 num_unfollows = num_unfollows + 1
-            elif allUsers == False:
+            elif allUsers is False:
                 relationship = getRelationship(userID)
                 if relationship == NO_FOLLOW:
                     modUser(userID, "unfollow")
                     num_unfollows = num_unfollows + 1
-            secs = random.randint(1, MAX_SECS)
+            secs = random.randint(1, options.MAX_SECS)
             time.sleep(secs)
         print num_unfollows
         if num_unfollows % 10 == 0:
             print "Unfollowed %s users " % num_unfollows
         msg("Number of users unfollowed is " + str(num_unfollows), "UNFL")
-        global ACTION
-        ACTION = "LIKE_FOLLOW"
+        options.ACTION = "LIKE_FOLLOW"
         begin()
         return num_unfollows
 
     def likeUsers(max_results, max_id, tag, likeCount, followCount):
-        urlFindLike = INSTAGRAM_API + "tags/%s/media/recent" % (tag)
+        urlFindLike = options.INSTAGRAM_API + "tags/%s/media/recent" % (tag)
         post = {'max_id': max_id}
         data = reqURL(urlFindLike, post)
         if response != "200":
             return
-        #numResults = len(data['data'])
-        #pictureID = 0
         likeCount = 0
         followCount = 0
         for likeObj in data['data']:
-            #pictureID = likeObj['id']
-            #paginationId = data["pagination"]['next_max_id']
             user = likeObj['user']
             userID = user['id']
             if userID not in userArray:
@@ -499,32 +506,32 @@ try:
                     likeCount = likeCount + likeFollowCount
                 except Exception:
                     return
-                if (ACTION == "LIKE_FOLLOW"):
+                if (options.ACTION == "LIKE_FOLLOW"):
                     followCount = followCount + 1
-                secs = random.randint(1, MAX_SECS)
+                secs = random.randint(1, options.MAX_SECS)
                 time.sleep(secs)
             if (likeCount % 10 == 0 and likeCount != 0):
                 msg('Liked ' + str(likeCount) +
                     ' pictures from #' + tag, 'LIKE')
-            if (ACTION == "LIKE_FOLLOW"):
+            if (options.ACTION == "LIKE_FOLLOW"):
                 if (followCount % 10 == 0 and followCount != 0):
                     msg('Followed ' + str(followCount) +
                         ' users from #' + tag, 'FLLW')
                 if (followCount == max_results):
                     break
-            elif (ACTION == "LIKE"):
+            elif (options.ACTION == "LIKE"):
                 if (likeCount == max_results):
                     break
         # if(likeCount != max_results):
         #    likeUsers(max_results, max_id, tag, likeCount, followCount)
         msg('Liked ' + str(likeCount) + ' pictures and followed ' +
-            str(followCount) + ' users from tag #' + tag, 'TAGS')
+            str(followCount) + ' users from tag #' + tag, 'options.TAGS')
         return
 
     # Like and follow users
     def likeAndFollowUser(userID, follow=True):
         numLikesFollows = 0
-        userURL = INSTAGRAM_API + "users/%s" % (userID)
+        userURL = options.INSTAGRAM_API + "users/%s" % (userID)
         urlUserMedia = userURL + "/media/recent"
         data = reqURL(userURL)
         if response != "200":
@@ -533,7 +540,8 @@ try:
         followedByCount = data['data']['counts']['followed_by']
         if followsCount < (followedByCount / 2):
             msg("User " + tCol.WARNING + userID + tCol.FAIL +
-                " is following less than half of their follower count. Skipping...", "FLLW", "FAIL")
+                " is following less than half of their follower count.",
+                "FLLW", "FAIL")
             return
         data = reqURL(urlUserMedia)
         if response != "200":
@@ -553,7 +561,7 @@ try:
         return numLikesFollows
 
     def popFunction():
-        urlPopular = INSTAGRAM_API + "media/popular"
+        urlPopular = options.INSTAGRAM_API + "media/popular"
         data = reqURL(urlPopular)
         if response != "200":
             return
@@ -569,29 +577,29 @@ try:
                 if(followCount % 10 == 0):
                     msg("Followed " + str(followCount) +
                         " users", "followCount")
-                seconds = random.randint(1, MAX_SECS)
+                seconds = random.randint(1, options.MAX_SECS)
                 time.sleep(seconds)
-                if (followCount == MAX_COUNT):
+                if (followCount == options.MAX_COUNT):
                     break
-            if (followCount == MAX_COUNT):
+            if (followCount == options.MAX_COUNT):
                 break
         msg("Followed " + str(followCount) + " users", "followCount")
         msg("Liked " + str(likeCount) + " pictures", "LIKE")
 
     def decider():
-        if(ACTION == "LIKE" or ACTION == "LIKE_FOLLOW"):
+        if(options.ACTION == "LIKE" or options.ACTION == "LIKE_FOLLOW"):
             getUsers()
             getPics()
-            for tag in TAGS:
-                likeUsers(MAX_COUNT, 0, tag, 0, 0)
-        elif(ACTION == "POPULAR"):
+            for tag in options.TAGS:
+                likeUsers(options.MAX_COUNT, 0, tag, 0, 0)
+        elif(options.ACTION == "POPULAR"):
             getUsers()
             getPics()
             popFunction()
-        elif(ACTION == "UNFOLLOW"):
+        elif(options.ACTION == "UNFOLLOW"):
             getUsers()
             unfollowUsers(False)
-        elif(ACTION == "UNFOLLOW_ALL"):
+        elif(options.ACTION == "UNFOLLOW_ALL"):
             getFollowing()
             unfollowUsers(True)
         else:
