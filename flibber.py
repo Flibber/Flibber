@@ -40,6 +40,7 @@ try:
     totalErrors = 0
 
     globErrorMessage = ""
+    errorLevel = 0
 
     class tCol:
         HEADER = '\033[95m'
@@ -98,7 +99,7 @@ try:
     def reqURL(url, post="", proto="GET", reqType="API"):
         global count, dataDict, response, globErrorMessage
         global API_DELAY, LIKE_DELAY, REL_DELAY
-        global totalAPICalls, totalErrors
+        global totalAPICalls, totalErrors, errorLevel
 
         bytesIO = BytesIO()
         pc = pycurl.Curl()
@@ -164,6 +165,13 @@ try:
             dataDict = ""
             response = "500"
             error_message = e
+            errorLevel = errorLevel + 1
+            if errorLevel > 3:
+                msg("Error level exceeded, check options.",
+                    "ERRO", "FAIL")
+                sys.exit(1)
+
+        errorLevel = 0
 
         if proto == "POST":
             msg(url, "RURL", "OKBLUE")
