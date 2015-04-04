@@ -1,3 +1,4 @@
+start = 0
 try:
     import time
     import random
@@ -72,6 +73,8 @@ try:
     def msg(message, prefix="FLIB", level="OKGREEN"):
         print ("[" + getattr(tCol, level) + prefix + tCol.ENDC + "] " +
                getattr(tCol, level) + message + tCol.ENDC)
+
+    start = 1
 
     def execPause(length):
         msg('Paused for ' + tCol.FAIL + str(length) +
@@ -626,21 +629,31 @@ try:
 
 except KeyboardInterrupt:
     print ""
-    msg(tCol.BOLD + "Keyboard Interrupt!", "INPT", "FAIL")
+    if start == 1:
+        msg(tCol.BOLD + "Keyboard Interrupt!", "INPT", "FAIL")
+    else:
+        print "Keyboard Interrupt"
 
 except Exception as e:
     print ""
-    msg(tCol.BOLD + str(e), "EXEP", "FAIL")
+    if start == 1:
+        msg(tCol.BOLD + str(e), "EXEP", "FAIL")
+    else:
+        print e
 
 else:
     print ""
-    msg(tCol.BOLD + "Unknown Error!", "ERRO", "FAIL")
+    if start == 1:
+        msg(tCol.BOLD + "Unknown Error!", "ERRO", "FAIL")
+    else:
+        print "Unknown Error"
 
 finally:
-    print ""
-    msg(tCol.UNDERLINE + "Statistics from run:", "STAT", "WARNING")
-    msg("Total Unfollows: " + tCol.BOLD + str(totalUnfollows), "STAT", "FAIL")
-    msg("Total Follows: " + tCol.BOLD + str(totalFollows), "STAT", "OKGREEN")
-    msg("Total Likes: " + tCol.BOLD + str(totalLikes), "STAT", "OKBLUE")
-    msg("Total API Calls: " + tCol.BOLD + str(totalAPICalls), "STAT", "HEADER")
-    print ""
+    if start == 1:
+        print ""
+        msg(tCol.UNDERLINE + "Statistics from run:", "STAT", "WARNING")
+        msg("Total Unfollows: " + tCol.BOLD + str(totalUnfollows), "STAT", "FAIL")
+        msg("Total Follows: " + tCol.BOLD + str(totalFollows), "STAT", "OKGREEN")
+        msg("Total Likes: " + tCol.BOLD + str(totalLikes), "STAT", "OKBLUE")
+        msg("Total API Calls: " + tCol.BOLD + str(totalAPICalls), "STAT", "HEADER")
+        print ""
