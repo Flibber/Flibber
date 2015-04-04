@@ -112,8 +112,8 @@ try:
         header = '|'.join([options.IP, signature])
         header = ["X-Insta-Forwarded-For: " + header]
 
-        post_data = {'options.ACCESS_TOKEN': options.ACCESS_TOKEN,
-                     'options.CLIENT_ID': options.CLIENT_ID}
+        post_data = {'ACCESS_TOKEN': options.ACCESS_TOKEN,
+                     'CLIENT_ID': options.CLIENT_ID}
         post_data.update(post)
         postfields = urllib.urlencode(post_data)
 
