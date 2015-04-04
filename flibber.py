@@ -174,8 +174,6 @@ try:
                     "ERRO", "FAIL")
                 sys.exit(1)
 
-        errorLevel = 0
-
         if proto == "POST":
             msg(url, "RURL", "OKBLUE")
         else:
@@ -185,6 +183,7 @@ try:
         msg(proto, "HTTP", "OKBLUE")
 
         if response == "200":
+            errorLevel = 0
             msg(response, "CODE")
             APIArray.append(currentTime())
         elif response == "500":
