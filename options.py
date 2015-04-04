@@ -2,9 +2,14 @@
 # redirected to will have your CODE appended to the URI
 # https://api.instagram.com/oauth/authorize/?client_id=<CLIENT_ID_HERE>&redirect_uri=<REDIRECT_URI_HERE>&response_type=code&display=touch&scope=likes+relationships
 #
-# 2: Change the variables here and navigate to this URL, get the ACCESS_TOKEN
-# from the response
-# https://api.instagram.com/oauth/access_token?client_id=<CLIENT_ID_HERE>&client_secret=<CLIENT_SECRET_HERE>&redirect_uri=<REDIRECT_URI_HERE>&code=<CODE_HERE>&grant_type=authorization_code
+# 2: Change the variables here and POST this URL (POSTman for Chrome), get the
+# ACCESS_TOKEN from the response:
+# https://api.instagram.com/oauth/access_token
+# client_id=<CLIENT_ID_HERE>
+# client_secret=<CLIENT_SECRET_HERE>
+# redirect_uri=<REDIRECT_URI_HERE>
+# code=<CODE_HERE>
+# grant_type=authorization_code
 
 INSTAGRAM_API = "https://api.instagram.com/v1/"
 USER_AGENT = 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_0 like Mac OS X; en-us) \
