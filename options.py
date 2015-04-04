@@ -1,6 +1,8 @@
-# https://api.instagram.com/oauth/authorize/?client_id=ceaadb365bec45a7b586c0c576667307&redirect_uri=https://starbs.net&response_type=code&display=touch&scope=likes+relationships
+# 1: Change the variables here and navigate to the URL, the page you are redirected to will have your CODE appended to the URI
+# https://api.instagram.com/oauth/authorize/?client_id=<CLIENT_ID_HERE>&redirect_uri=<REDIRECT_URI_HERE>&response_type=code&display=touch&scope=likes+relationships
 #
-# curl -F 'client_id=ceaadb365bec45a7b586c0c576667307' -F 'client_secret=0d0d7cfb3bec4de5b4f04c308dc9bc9e' -F 'grant_type=authorization_code' -F 'redirect_uri=https://starbs.net' -F 'code=3cc14d84222540a194144c6b30097f53' https://api.instagram.com/oauth/access_token
+# 2: Change the variables here and navigate to this URL, get the ACCESS_TOKEN from the response
+# https://api.instagram.com/oauth/access_token?client_id=<CLIENT_ID_HERE>&client_secret=<CLIENT_SECRET_HERE>&redirect_uri=<REDIRECT_URI_HERE>&code=<CODE_HERE>&grant_type=authorization_code
 
 INSTAGRAM_API = "https://api.instagram.com/v1/"
 USER_AGENT = 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_0 like Mac OS X; en-us) AppleWebKit/532.9 (KHTML, like Gecko) Version/4.0.5 Mobile/8A293 Safari/6531.22.7'
