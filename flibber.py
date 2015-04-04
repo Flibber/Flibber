@@ -652,8 +652,8 @@ finally:
     if start == 1:
         print ""
         msg(tCol.UNDERLINE + "Statistics from run:", "STAT", "WARNING")
-        msg("Total Unfollows: " + tCol.BOLD + str(totalUnfollows), "STAT", "FAIL")
-        msg("Total Follows: " + tCol.BOLD + str(totalFollows), "STAT", "OKGREEN")
-        msg("Total Likes: " + tCol.BOLD + str(totalLikes), "STAT", "OKBLUE")
-        msg("Total API Calls: " + tCol.BOLD + str(totalAPICalls), "STAT", "HEADER")
+        msg("Unfollows: " + tCol.BOLD + str(totalUnfollows), "STAT", "FAIL")
+        msg("Follows: " + tCol.BOLD + str(totalFollows), "STAT", "OKGREEN")
+        msg("Likes: " + tCol.BOLD + str(totalLikes), "STAT", "OKBLUE")
+        msg("API Calls: " + tCol.BOLD + str(totalAPICalls), "STAT", "HEADER")
         print ""
