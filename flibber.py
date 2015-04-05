@@ -70,24 +70,25 @@ try:
     relArray = []
     picArray = []
 
-    def msg(message, prefix="FLIB", level="OKGREEN"):
+    def printMsg(message, prefix="FLIB", level="OKGREEN"):
         print ("[" + getattr(tCol, level) + prefix + tCol.ENDC + "] " +
                getattr(tCol, level) + message + tCol.ENDC)
+        return
 
     start = 1
 
     def execPause(length):
-        msg('Paused for ' + tCol.FAIL + str(length) +
-            tCol.WARNING + ' seconds...', "TIME", "WARNING")
+        printMsg('Paused for ' + tCol.FAIL + str(length) +
+                 tCol.WARNING + ' seconds...', "TIME", "WARNING")
         time.sleep(length)
 
     if options.ACCESS_TOKEN == "changeme" or options.CLIENT_ID == "changeme":
-        print msg("You must change all variables which equal 'changeme'",
-                  "FAIL", "FAIL")
+        print printMsg("You must change all variables which equal 'changeme'",
+                       "FAIL", "FAIL")
         sys.exit(1)
     elif options.CLIENT_SECRET == "changeme" or options.IP == "changeme":
-        print msg("You must change all variables which equal 'changeme'",
-                  "FAIL", "FAIL")
+        print printMsg("You must change all variables which equal 'changeme'",
+                       "FAIL", "FAIL")
         sys.exit(1)
 
     def headerFunction(header_line):
@@ -160,54 +161,55 @@ try:
             body = bytesIO.getvalue()
 
             dataDict = simplejson.loads(body)
-            msg(tCol.BOLD + 'Request #' + str(count), "NUM#", "HEADER")
-            msg('Remaining API calls: ' + tCol.FAIL +
-                headers['x-ratelimit-remaining'] + '/' +
-                headers['x-ratelimit-limit'] + tCol.ENDC, "RATE", "OKBLUE")
+            printMsg(tCol.BOLD + 'Request #' + str(count), "NUM#", "HEADER")
+            printMsg('Remaining API calls: ' + tCol.FAIL +
+                     headers['x-ratelimit-remaining'] + '/' +
+                     headers['x-ratelimit-limit'] + tCol.ENDC, "RATE",
+                     "OKBLUE")
         except Exception as e:
             dataDict = ""
             response = "500"
             error_message = e
             errorLevel = errorLevel + 1
             if errorLevel > 3:
-                msg("Error level exceeded, check options.",
-                    "ERRO", "FAIL")
+                printMsg("Error level exceeded, check options.",
+                         "ERRO", "FAIL")
                 sys.exit(1)
 
         if proto == "POST":
-            msg(url, "RURL", "OKBLUE")
+            printMsg(url, "RURL", "OKBLUE")
         else:
-            msg(getURL, "RURL", "OKBLUE")
+            printMsg(getURL, "RURL", "OKBLUE")
 
-        msg(postfields, "FLDS", "OKBLUE")
-        msg(proto, "HTTP", "OKBLUE")
+        printMsg(postfields, "FLDS", "OKBLUE")
+        printMsg(proto, "HTTP", "OKBLUE")
 
         if response == "200":
             errorLevel = 0
-            msg(response, "CODE")
+            printMsg(response, "CODE")
             APIArray.append(currentTime())
         elif response == "500":
             totalErrors = totalErrors + 1
             globErrorMessage = str(error_message)
             if globErrorMessage == "(23, 'Failed writing header')":
                 print ""
-                msg(tCol.BOLD + "Keyboard Interrupt!", "INPT", "FAIL")
+                printMsg(tCol.BOLD + "Keyboard Interrupt!", "INPT", "FAIL")
                 sys.exit(1)
-            msg(str(error_message), "ERRO", "FAIL")
+            printMsg(str(error_message), "ERRO", "FAIL")
         elif response != "200":
             totalErrors = totalErrors + 1
             error_message = dataDict["meta"]["error_message"]
             error_type = dataDict["meta"]["error_type"]
-            msg(response, "CODE", "FAIL")
-            msg(error_type, "TYPE", "FAIL")
-            msg(error_message, "FAIL", "FAIL")
+            printMsg(response, "CODE", "FAIL")
+            printMsg(error_type, "TYPE", "FAIL")
+            printMsg(error_message, "FAIL", "FAIL")
             if response == "400" and error_type == "OAuthAccessTokenException":
                 sys.exit(1)
             if response == "429":
                 rates = [int(s) for s in error_message.split() if s.isdigit()]
-                msg('Rate exceeded: ' + tCol.FAIL + str(rates[0]) + '/' + str(
-                    rates[1]) + tCol.WARNING + ' in the last hour.',
-                    "RATE", "WARNING")
+                printMsg("Rate exceeded: " + tCol.FAIL + str(rates[0]) + "/" +
+                         str(rates[1]) + tCol.WARNING + " in the last hour.",
+                         "RATE", "WARNING")
                 if reqType == "Like":
                     LIKE_DELAY = LIKE_DELAY + 1
                     rateArray = likeArray
@@ -242,9 +244,9 @@ try:
             arrayName = followedArray
         else:
             userArray = list(set(followArray) - set(followedArray))
-            msg(tCol.FAIL + tCol.BOLD + str(num_users) + tCol.ENDC +
-                tCol.WARNING +
-                " users added to interaction blacklist", "USER", "WARNING")
+            printMsg(tCol.FAIL + tCol.BOLD + str(num_users) + tCol.ENDC +
+                     tCol.WARNING + " users added to interaction blacklist",
+                     "USER", "WARNING")
             return
 
         if next_cursor is not None:
@@ -256,7 +258,7 @@ try:
         if response != "200":
             if globErrorMessage == "(23, 'Failed writing header')":
                 sys.exit(1)
-            msg("Retrying request...", "RTRY", "WARNING")
+            printMsg("Retrying request...", "RTRY", "WARNING")
             getUsers(next_cursor, num_users, stage)
             return
 
@@ -289,7 +291,7 @@ try:
         if response != "200":
             if globErrorMessage == "(23, 'Failed writing header')":
                 sys.exit(1)
-            msg("Retrying request...", "RTRY", "WARNING")
+            printMsg("Retrying request...", "RTRY", "WARNING")
             getFollowing(next_cursor, num_users)
             return
 
@@ -307,9 +309,9 @@ try:
 
         if next_cursor is None:
             userArray = list(set(followArray))
-            msg(tCol.FAIL + tCol.BOLD + str(num_users) + tCol.ENDC +
-                tCol.WARNING +
-                " users added to interaction blacklist", "USER", "WARNING")
+            printMsg(tCol.FAIL + tCol.BOLD + str(num_users) + tCol.ENDC +
+                     tCol.WARNING + " users added to interaction blacklist",
+                     "USER", "WARNING")
             return
         getFollowing(next_cursor, num_users)
 
@@ -325,7 +327,7 @@ try:
         if response != "200":
             if globErrorMessage == "(23, 'Failed writing header')":
                 sys.exit(1)
-            msg("Retrying request...", "RTRY", "WARNING")
+            printMsg("Retrying request...", "RTRY", "WARNING")
             getPics(next_max_like_id, num_likes)
             return
 
@@ -345,20 +347,44 @@ try:
         if next_max_like_id is not None:
             getPics(next_max_like_id, num_likes)
         else:
-            msg(tCol.FAIL + tCol.BOLD + str(num_likes) + tCol.ENDC +
-                tCol.WARNING +
-                " pictures added to interaction blacklist", "LIKE", "WARNING")
+            printMsg(tCol.FAIL + tCol.BOLD + str(num_likes) + tCol.ENDC +
+                     tCol.WARNING + " pictures added to interaction blacklist",
+                     "LIKE", "WARNING")
+
+    def followCheck(unfollow=0):
+        userURL = options.INSTAGRAM_API + "users/self"
+        data = reqURL(userURL)
+        if response != "200":
+            return
+        try:
+            followsCount = int(data['data']['counts']['follows'])
+        except Exception:
+            printMsg("Failed to get follow count. Skipping...", "FLLW", "FAIL")
+            return
+        if followsCount >= 2399 and options.ACTION != "UNFOLLOW_ALL":
+            print unfollow
+            printMsg("Following cap exceeded. Unfollowing all users", "UFLW")
+            options.ACTION = "UNFOLLOW_ALL"
+            begin()
+            sys.exit(1)
+        elif followsCount <= 1 and options.ACTION == "UNFOLLOW_ALL":
+            printMsg("All users unfollowed. Following users.", "UFLW")
+            options.ACTION = "LIKE_FOLLOW"
+            begin()
+            sys.exit(1)
+        printMsg("Following count: " + str(followsCount), "FLLW")
+        return
 
     # Like `pictureID`
     def likePicture(pictureID):
         if pictureID in picArray:
-            msg("You already like picture " +
-                tCol.WARNING + pictureID, "LIKE", "FAIL")
+            printMsg("You already like picture " +
+                     tCol.WARNING + pictureID, "LIKE", "FAIL")
             return
         global totalLikes
         global lastLike
         likeURL = options.INSTAGRAM_API + "media/%s/likes" % (pictureID)
-        msg("Liking picture " + pictureID, "LIKE")
+        printMsg("Liking picture " + pictureID, "LIKE")
         timeDifference = currentTime() - lastLike
         if timeDifference < LIKE_DELAY:
             execPause(LIKE_DELAY - timeDifference)
@@ -388,25 +414,26 @@ try:
             followsCount = int(data['data']['counts']['follows'])
             followedByCount = int(data['data']['counts']['followed_by'])
         except Exception:
-            msg("Failed to get follow counts. Skipping...", "FLLW", "FAIL")
+            printMsg(
+                "Failed to get follow counts. Skipping...", "FLLW", "FAIL")
             return
         post = {'action': action}
         if action == "follow":
             if userID in userArray:
-                msg("You are already following user " +
-                    tCol.WARNING + userID, "FLLW", "FAIL")
+                printMsg("You are already following user " +
+                         tCol.WARNING + userID, "FLLW", "FAIL")
                 return
             if followsCount < (followedByCount / 2):
-                msg("User " + tCol.WARNING + userID + tCol.FAIL +
-                    " is following less than half of their follower count.",
-                    "FLLW", "FAIL")
+                printMsg("User " + tCol.WARNING + userID + tCol.FAIL +
+                         " is following < half of their follower count.",
+                         "FLLW", "FAIL")
                 return
             verbAct = "Following"
             swap = 0
         elif action == "unfollow":
             if userID not in userArray:
-                msg("You are not following user " +
-                    tCol.WARNING + userID, "FLLW", "FAIL")
+                printMsg("You are not following user " +
+                         tCol.WARNING + userID, "FLLW", "FAIL")
                 return
             verbAct = "Unfollowing"
             swap = 1
@@ -423,7 +450,8 @@ try:
                 waitTime = currentTime() - relArray[0] - 3600
                 if waitTime > 0:
                     execPause(waitTime)
-        msg(verbAct + " user " + userID, "RLAT")
+        followCheck()
+        printMsg(verbAct + " user " + userID, "RLAT")
         reqURL(modURL, post, "POST", "Relation")
         if response != "200":
             return
@@ -460,21 +488,22 @@ try:
             if outgoing == "follows":
                 if swap == 0:
                     totalFollows = totalFollows + 1
-                msg("You are following user " + userID, "GREL", followLevel)
+                printMsg("You are following user " + userID, "GREL",
+                         followLevel)
                 return FOLLOWS
             else:
                 if swap == 1:
                     totalUnfollows = totalUnfollows + 1
-                msg("You are not following user " + userID,
-                    "GREL", noFollowLevel)
+                printMsg("You are not following user " + userID,
+                         "GREL", noFollowLevel)
                 return NO_FOLLOW
         else:
             if incoming != "followed_by":
-                msg("User " + userID + " does not follow you",
-                    "GREL", noFollowLevel)
+                printMsg("User " + userID + " does not follow you",
+                         "GREL", noFollowLevel)
                 return NO_FOLLOW
             else:
-                msg("User " + userID + " follows you", followLevel)
+                printMsg("User " + userID + " follows you", followLevel)
                 return FOLLOWS
 
     # Unfollow users who are not following back
@@ -482,6 +511,7 @@ try:
         num_unfollows = 0
         for userID in userArray:
             if allUsers is True:
+                followCheck(unfollow=1)
                 modUser(userID, "unfollow")
                 num_unfollows = num_unfollows + 1
             elif allUsers is False:
@@ -494,7 +524,7 @@ try:
         print num_unfollows
         if num_unfollows % 10 == 0:
             print "Unfollowed %s users " % num_unfollows
-        msg("Number of users unfollowed is " + str(num_unfollows), "UNFL")
+        printMsg("Number of users unfollowed is " + str(num_unfollows), "UNFL")
         options.ACTION = "LIKE_FOLLOW"
         begin()
         return num_unfollows
@@ -521,12 +551,12 @@ try:
                 secs = random.randint(1, options.MAX_SECS)
                 time.sleep(secs)
             if (likeCount % 10 == 0 and likeCount != 0):
-                msg('Liked ' + str(likeCount) +
-                    ' pictures from #' + tag, 'LIKE')
+                printMsg('Liked ' + str(likeCount) +
+                         ' pictures from #' + tag, 'LIKE')
             if (options.ACTION == "LIKE_FOLLOW"):
                 if (followCount % 10 == 0 and followCount != 0):
-                    msg('Followed ' + str(followCount) +
-                        ' users from #' + tag, 'FLLW')
+                    printMsg('Followed ' + str(followCount) +
+                             ' users from #' + tag, 'FLLW')
                 if (followCount == max_results):
                     break
             elif (options.ACTION == "LIKE"):
@@ -534,8 +564,8 @@ try:
                     break
         # if(likeCount != max_results):
         #    likeUsers(max_results, max_id, tag, likeCount, followCount)
-        msg('Liked ' + str(likeCount) + ' pictures and followed ' +
-            str(followCount) + ' users from tag #' + tag, 'options.TAGS')
+        printMsg('Liked ' + str(likeCount) + ' pictures and followed ' +
+                 str(followCount) + ' users from tag #' + tag, 'TAGS')
         return
 
     # Like and follow users
@@ -549,15 +579,16 @@ try:
         followsCount = data['data']['counts']['follows']
         followedByCount = data['data']['counts']['followed_by']
         if followsCount < (followedByCount / 2):
-            msg("User " + tCol.WARNING + userID + tCol.FAIL +
-                " is following less than half of their follower count.",
-                "FLLW", "FAIL")
+            printMsg("User " + tCol.WARNING + userID + tCol.FAIL +
+                     " is following less than half of their follower count.",
+                     "FLLW", "FAIL")
             return
         data = reqURL(urlUserMedia)
         if response != "200":
             return
         picsToLike = random.randint(1, 4)
-        msg("Liking " + str(picsToLike) + " pictures for user " + str(userID))
+        printMsg("Liking " + str(picsToLike) + " pictures for user " +
+                 str(userID))
         countPicViews = 0
         for picture in data['data']:
             if picture['id'] not in likeArray:
@@ -585,16 +616,16 @@ try:
                     followCount = followCount + 1
                 likeCount = likeCount + 1
                 if(followCount % 10 == 0):
-                    msg("Followed " + str(followCount) +
-                        " users", "followCount")
+                    printMsg("Followed " + str(followCount) +
+                             " users", "followCount")
                 seconds = random.randint(1, options.MAX_SECS)
                 time.sleep(seconds)
                 if (followCount == options.MAX_COUNT):
                     break
             if (followCount == options.MAX_COUNT):
                 break
-        msg("Followed " + str(followCount) + " users", "followCount")
-        msg("Liked " + str(likeCount) + " pictures", "LIKE")
+        printMsg("Followed " + str(followCount) + " users", "followCount")
+        printMsg("Liked " + str(likeCount) + " pictures", "LIKE")
 
     def decider():
         if(options.ACTION == "LIKE" or options.ACTION == "LIKE_FOLLOW"):
@@ -613,46 +644,50 @@ try:
             getFollowing()
             unfollowUsers(True)
         else:
-            msg("Invalid ACTION specified", "ACTO", "FAIL")
+            printMsg("Invalid ACTION specified", "ACTO", "FAIL")
 
     def begin():
         decider()
         begin()
 
-    msg("----------------------", "FLIB", "HEADER")
-    msg("  Welcome to Flibber  ", "FLIB", "HEADER")
-    msg("  Chip (itschip.com)  ", "FLIB", "HEADER")
-    msg("----------------------", "FLIB", "HEADER")
+    printMsg("----------------------", "FLIB", "HEADER")
+    printMsg("  Welcome to Flibber  ", "FLIB", "HEADER")
+    printMsg("  Chip (itschip.com)  ", "FLIB", "HEADER")
+    printMsg("----------------------", "FLIB", "HEADER")
+    print ""
 
     begin()
 
 except KeyboardInterrupt:
     print ""
     if start == 1:
-        msg(tCol.BOLD + "Keyboard Interrupt!", "INPT", "FAIL")
+        printMsg(tCol.BOLD + "Keyboard Interrupt!", "INPT", "FAIL")
     else:
         print "Keyboard Interrupt"
 
 except Exception as e:
     print ""
     if start == 1:
-        msg(tCol.BOLD + str(e), "EXEP", "FAIL")
+        printMsg(tCol.BOLD + str(e), "EXEP", "FAIL")
     else:
         print e
 
 else:
     print ""
     if start == 1:
-        msg(tCol.BOLD + "Unknown Error!", "ERRO", "FAIL")
+        printMsg(tCol.BOLD + "Unknown Error!", "ERRO", "FAIL")
     else:
         print "Unknown Error"
 
 finally:
     if start == 1:
         print ""
-        msg(tCol.UNDERLINE + "Statistics from run:", "STAT", "WARNING")
-        msg("Unfollows: " + tCol.BOLD + str(totalUnfollows), "STAT", "FAIL")
-        msg("Follows: " + tCol.BOLD + str(totalFollows), "STAT", "OKGREEN")
-        msg("Likes: " + tCol.BOLD + str(totalLikes), "STAT", "OKBLUE")
-        msg("API Calls: " + tCol.BOLD + str(totalAPICalls), "STAT", "HEADER")
+        printMsg(tCol.UNDERLINE + "Statistics from run:", "STAT", "WARNING")
+        printMsg("Unfollows: " + tCol.BOLD + str(totalUnfollows), "STAT",
+                 "FAIL")
+        printMsg("Follows: " + tCol.BOLD + str(totalFollows), "STAT",
+                 "OKGREEN")
+        printMsg("Likes: " + tCol.BOLD + str(totalLikes), "STAT", "OKBLUE")
+        printMsg("API Calls: " + tCol.BOLD + str(totalAPICalls), "STAT",
+                 "HEADER")
         print ""
