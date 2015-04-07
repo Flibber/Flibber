@@ -12,14 +12,13 @@ USER_AGENT = 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_0 like Mac OS X; en-us) \
 AppleWebKit/532.9 (KHTML, like Gecko) Version/4.0.5 \
 Mobile/8A293 Safari/6531.22.7'
 
-ACCESS_TOKEN = "ACCESS_TOKEN_HERE"  # CHANGE AFTER FIRST RUN
 CLIENT_ID = "<CLIENT_ID_HERE>"  # CHANGE THIS
 CLIENT_SECRET = "<CLIENT_SECRET_HERE>"  # CHANGE THIS
 IP = "8.8.8.8"  # PUBLIC IP - CHANGE THIS
 REDIRECT_URI = "https://example.com"  # CHANGE THIS
-CODE = "CODE_HERE"
+ACCESS_TOKEN = "<ACCESS_TOKEN_HERE>"  # CHANGE AFTER FIRST RUN
 
-ACTION = "LIKE_FOLLOW"
+ACTION = "LIKE_FOLLOW"  # CHANGE IF DESIRED
 # LIKE (like photos based on TAGS below)
 # LIKE_FOLLOW (like and follow users based on TAGS below)
 # UNFOLLOW (unfollow users who are not following you)
