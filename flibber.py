@@ -21,7 +21,7 @@ try:
     # Or, the bot will be running slower than necessary
     LIKE_DELAY = 36
     REL_DELAY = 60
-    API_DELAY = 0
+    API_DELAY = 1
 
     # DO NOT CHANGE ANYTHING BELOW THIS POINT
 
@@ -78,8 +78,9 @@ try:
     start = 1
 
     def execPause(length):
-        printMsg('Paused for ' + tCol.FAIL + str(length) +
-                 tCol.WARNING + ' seconds...', "TIME", "WARNING")
+        if length > 3:
+            printMsg('Paused for ' + tCol.FAIL + str(length) +
+                     tCol.WARNING + ' seconds...', "TIME", "WARNING")
         time.sleep(length)
 
     if options.ACCESS_TOKEN == "changeme" or options.CLIENT_ID == "changeme":
@@ -103,7 +104,7 @@ try:
     def reqURL(url, post="", proto="GET", reqType="API"):
         global count, dataDict, response, globErrorMessage
         global API_DELAY, LIKE_DELAY, REL_DELAY
-        global totalAPICalls, totalErrors, errorLevel
+        global totalAPICalls, totalErrors, errorLevel, lastAPI
 
         bytesIO = BytesIO()
         pc = pycurl.Curl()
@@ -162,16 +163,19 @@ try:
 
             dataDict = simplejson.loads(body)
             printMsg(tCol.BOLD + 'Request #' + str(count), "NUM#", "HEADER")
-            printMsg('Remaining API calls: ' + tCol.FAIL +
-                     headers['x-ratelimit-remaining'] + '/' +
-                     headers['x-ratelimit-limit'] + tCol.ENDC, "RATE",
-                     "OKBLUE")
+            try:
+                printMsg('Remaining API calls: ' + tCol.FAIL +
+                         headers['x-ratelimit-remaining'] + '/' +
+                         headers['x-ratelimit-limit'] + tCol.ENDC, "RATE",
+                         "OKBLUE")
+            except Exception:
+                execPause(1)
         except Exception as e:
             dataDict = ""
             response = "500"
             error_message = e
             errorLevel = errorLevel + 1
-            if errorLevel > 3:
+            if errorLevel > 8:
                 printMsg("Error level exceeded, check options.",
                          "ERRO", "FAIL")
                 sys.exit(1)
@@ -184,55 +188,76 @@ try:
         printMsg(postfields, "FLDS", "OKBLUE")
         printMsg(proto, "HTTP", "OKBLUE")
 
-        if response == "200":
-            errorLevel = 0
-            printMsg(response, "CODE")
-            APIArray.append(currentTime())
-        elif response == "500":
-            totalErrors = totalErrors + 1
-            globErrorMessage = str(error_message)
-            if globErrorMessage == "(23, 'Failed writing header')":
-                print ""
-                printMsg(tCol.BOLD + "Keyboard Interrupt!", "INPT", "FAIL")
-                sys.exit(1)
-            printMsg(str(error_message), "ERRO", "FAIL")
-        elif response != "200":
-            totalErrors = totalErrors + 1
-            error_message = dataDict["meta"]["error_message"]
-            error_type = dataDict["meta"]["error_type"]
-            printMsg(response, "CODE", "FAIL")
-            printMsg(error_type, "TYPE", "FAIL")
-            printMsg(error_message, "FAIL", "FAIL")
-            if response == "400" and error_type == "OAuthAccessTokenException":
-                sys.exit(1)
-            if response == "429":
-                rates = [int(s) for s in error_message.split() if s.isdigit()]
-                printMsg("Rate exceeded: " + tCol.FAIL + str(rates[0]) + "/" +
-                         str(rates[1]) + tCol.WARNING + " in the last hour.",
-                         "RATE", "WARNING")
-                if reqType == "Like":
-                    LIKE_DELAY = LIKE_DELAY + 1
-                    rateArray = likeArray
-                    rateLen = 99
-                elif reqType == "Relation":
-                    REL_DELAY = REL_DELAY + 1
-                    rateArray = relArray
-                    rateLen = 99
-                else:
-                    API_DELAY = API_DELAY + 1
-                    rateArray = APIArray
-                    rateLen = 4999
-                rateDiff = rateLen - len(rateArray)
-                if rateDiff > 0:
-                    while len(rateArray) < rateLen:
-                        rateArray.append(currentTime())
-                rateArray[0] = currentTime() - 3900
-                waitTime = 0
-                waitTime = currentTime() - rateArray[0] - 3600
-                execPause(waitTime)
-                reqURL(url, post, proto, reqType)
+        try:
+            if response == "200":
+                lastAPI = currentTime()
+                errorLevel = 0
+                printMsg(response, "CODE")
+                APIArray.append(currentTime())
+            elif response == "500":
+                totalErrors = totalErrors + 1
+                globErrorMessage = str(error_message)
+                if globErrorMessage == "(23, 'Failed writing header')":
+                    print ""
+                    printMsg(tCol.BOLD + "Keyboard Interrupt!", "INPT", "FAIL")
+                    sys.exit(1)
+                printMsg(str(error_message), "ERRO", "FAIL")
+            elif response != "200":
+                totalErrors = totalErrors + 1
+                error_message = dataDict["meta"]["error_message"]
+                error_type = dataDict["meta"]["error_type"]
+                printMsg(response, "CODE", "FAIL")
+                printMsg(error_type, "TYPE", "FAIL")
+                printMsg(error_message, "FAIL", "FAIL")
+                if response == "400" and \
+                   error_type == "OAuthAccessTokenException":
+                    sys.exit(1)
+                if response == "429":
+                    rates = [int(s) for s in error_message.split()
+                             if s.isdigit()]
+                    printMsg("Rate exceeded: " + tCol.FAIL + str(rates[0]) +
+                             "/" + str(rates[1]) + tCol.WARNING +
+                             " in the last hour.", "RATE", "WARNING")
+                    if reqType == "Like":
+                        LIKE_DELAY = LIKE_DELAY + 1
+                        rateArray = likeArray
+                        rateLen = 99
+                    elif reqType == "Relation":
+                        REL_DELAY = REL_DELAY + 1
+                        rateArray = relArray
+                        rateLen = 99
+                    else:
+                        API_DELAY = API_DELAY + 1
+                        rateArray = APIArray
+                        rateLen = 4999
+                    rateDiff = rateLen - len(rateArray)
+                    if rateDiff > 0:
+                        while len(rateArray) < rateLen:
+                            rateArray.append(currentTime())
+                    rateArray[0] = currentTime() - 3900
+                    waitTime = 0
+                    waitTime = currentTime() - rateArray[0] - 3600
+                    execPause(waitTime)
+                    reqURL(url, post, proto, reqType)
+        except Exception:
+            return
 
         return dataDict
+
+    def getAccessToken():
+        if options.ACCESS_TOKEN == "":
+            tokenURL = "https://api.instagram.com/oauth/access_token"
+            post = {'client_secret': options.CLIENT_SECRET,
+                    'redirect_uri': options.REDIRECT_URI,
+                    'code': options.CODE,
+                    'grant_type': 'authorization_code'}
+            data = reqURL(tokenURL, post, "POST")
+            options.ACCESS_TOKEN = str(data["access_token"])
+            printMsg("Here is your ACCESS_TOKEN: " + tCol.OKGREEN +
+                     options.ACCESS_TOKEN, "ACST", "WARNING")
+            printMsg("Replace the value in options.py", "REPL", "WARNING")
+            execPause(60)
+        return
 
     def getUsers(next_cursor=None, num_users=0, stage=0):
         global userArray
@@ -647,14 +672,18 @@ try:
             printMsg("Invalid ACTION specified", "ACTO", "FAIL")
 
     def begin():
+        getAccessToken()
         decider()
         begin()
 
+    print ""
     printMsg("----------------------", "FLIB", "HEADER")
-    printMsg("  Welcome to Flibber  ", "FLIB", "HEADER")
+    printMsg("  Welcome to " + tCol.WARNING + "Flibber  ", "FLIB", "HEADER")
     printMsg("  Chip (itschip.com)  ", "FLIB", "HEADER")
+    printMsg(tCol.OKGREEN + "    @ChipIsTheName    ", "FLIB", "HEADER")
     printMsg("----------------------", "FLIB", "HEADER")
     print ""
+    time.sleep(5)
 
     begin()
 
@@ -664,20 +693,6 @@ except KeyboardInterrupt:
         printMsg(tCol.BOLD + "Keyboard Interrupt!", "INPT", "FAIL")
     else:
         print "Keyboard Interrupt"
-
-except Exception as e:
-    print ""
-    if start == 1:
-        printMsg(tCol.BOLD + str(e), "EXEP", "FAIL")
-    else:
-        print e
-
-else:
-    print ""
-    if start == 1:
-        printMsg(tCol.BOLD + "Unknown Error!", "ERRO", "FAIL")
-    else:
-        print "Unknown Error"
 
 finally:
     if start == 1:

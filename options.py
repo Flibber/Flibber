@@ -1,25 +1,23 @@
 # 1: Change the variables here and navigate to the URL, the page you are
 # redirected to will have your CODE appended to the URI
+#
 # https://api.instagram.com/oauth/authorize/?client_id=<CLIENT_ID_HERE>&redirect_uri=<REDIRECT_URI_HERE>&response_type=code&display=touch&scope=likes+relationships
 #
-# 2: Change the variables here and POST this URL (POSTman for Chrome), get the
-# ACCESS_TOKEN from the response:
-# https://api.instagram.com/oauth/access_token
-# client_id=<CLIENT_ID_HERE>
-# client_secret=<CLIENT_SECRET_HERE>
-# redirect_uri=<REDIRECT_URI_HERE>
-# code=<CODE_HERE>
-# grant_type=authorization_code
+# 2: Run the program, it will execute correctly, but will give you the
+# ACCESS_TOKEN on the first run which you should replace below
+#
 
 INSTAGRAM_API = "https://api.instagram.com/v1/"
 USER_AGENT = 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_0 like Mac OS X; en-us) \
 AppleWebKit/532.9 (KHTML, like Gecko) Version/4.0.5 \
 Mobile/8A293 Safari/6531.22.7'
 
-ACCESS_TOKEN = "ACCESS_TOKEN_HERE"  # CHANGE
+ACCESS_TOKEN = "ACCESS_TOKEN_HERE"  # CHANGE AFTER FIRST RUN
 CLIENT_ID = "<CLIENT_ID_HERE>"  # CHANGE THIS
 CLIENT_SECRET = "<CLIENT_SECRET_HERE>"  # CHANGE THIS
 IP = "8.8.8.8"  # PUBLIC IP - CHANGE THIS
+REDIRECT_URI = "https://example.com"  # CHANGE THIS
+CODE = "CODE_HERE"
 
 ACTION = "LIKE_FOLLOW"
 # LIKE (like photos based on TAGS below)
