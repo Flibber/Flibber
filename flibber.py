@@ -21,7 +21,7 @@ try:
     # Or, the bot will be running slower than necessary
     LIKE_DELAY = 36
     REL_DELAY = 60
-    API_DELAY = 1
+    API_DELAY = 2
 
     # DO NOT CHANGE ANYTHING BELOW THIS POINT
 
@@ -79,6 +79,14 @@ try:
 
     def execPause(length):
         if length > 3:
+            if length > 60:
+                multiplier = int(float(length)/60)
+                i = 0
+                while i < multiplier:
+                    printMsg('Paused for ' + tCol.FAIL + str(length) +
+                             tCol.WARNING + ' seconds...', "TIME", "WARNING")
+                    i = i + 1
+                    length = length - 60
             printMsg('Paused for ' + tCol.FAIL + str(length) +
                      tCol.WARNING + ' seconds...', "TIME", "WARNING")
         time.sleep(length)
@@ -376,7 +384,7 @@ try:
                      tCol.WARNING + " pictures added to interaction blacklist",
                      "LIKE", "WARNING")
 
-    def followCheck(unfollow=0):
+    def followCheck():
         userURL = options.INSTAGRAM_API + "users/self"
         data = reqURL(userURL)
         if response != "200":
@@ -386,8 +394,8 @@ try:
         except Exception:
             printMsg("Failed to get follow count. Skipping...", "FLLW", "FAIL")
             return
-        if followsCount >= 2399 and options.ACTION != "UNFOLLOW_ALL":
-            print unfollow
+        if followsCount >= 7499 and options.ACTION != "UNFOLLOW_ALL":
+            execPause(86400)
             printMsg("Following cap exceeded. Unfollowing all users", "UFLW")
             options.ACTION = "UNFOLLOW_ALL"
             begin()
@@ -536,7 +544,7 @@ try:
         num_unfollows = 0
         for userID in userArray:
             if allUsers is True:
-                followCheck(unfollow=1)
+                followCheck()
                 modUser(userID, "unfollow")
                 num_unfollows = num_unfollows + 1
             elif allUsers is False:
@@ -674,6 +682,7 @@ try:
     def begin():
         getAccessToken()
         decider()
+        printMsg("Repeating script", "REPT", "WARNING")
         begin()
 
     print ""
