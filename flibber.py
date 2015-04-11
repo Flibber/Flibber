@@ -290,6 +290,7 @@ try:
         data = reqURL(userURL, post)
         if response != "200":
             if globErrorMessage == "(23, 'Failed writing header')":
+                print globErrorMessage
                 sys.exit(1)
             printMsg("Retrying request...", "RTRY", "WARNING")
             getUsers(next_cursor, num_users, stage)
@@ -323,6 +324,7 @@ try:
         data = reqURL(userURL, post)
         if response != "200":
             if globErrorMessage == "(23, 'Failed writing header')":
+                print globErrorMessage
                 sys.exit(1)
             printMsg("Retrying request...", "RTRY", "WARNING")
             getFollowing(next_cursor, num_users)
