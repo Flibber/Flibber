@@ -1,5 +1,7 @@
 # Flibber
 
+## ⚠️ *Deprecated*, see [this project instead](https://github.com/instabot-py/instabot.py)
+
 #### *verb* **to FLIB**
 (To **F**ollow and **L**ike with my **I**nstagram **B**ot)
 
